@@ -1,6 +1,17 @@
 /* analysisFull v0.00            damiancclarke             yyyy-mm-dd:2018-07-23
 ----|----1----|----2----|----3----|----4----|----5----|----6----|----7----|----8
 
+This is the main analysis file for the results documented in the paper "Abortion
+Reforms and Women's Health" by Damian Clarke and Hanna Mühlrad.  A working paper
+version of this is available as IZA Discussion Paper 11890 (available at the fol
+lowing address: http://ftp.iza.org/dp11890.pdf)
+
+Required external ados are indicated in section 1 of the code.  The code can be
+replicated by changing the globals in section 1 of the code. All data generating
+code can be found in "generateFull.do". Raw data files are available from Damian
+Clarke (damian.clarke@protonmail.com) or the INEGI website.  Only processed data
+is currently on this repository, as the original data files are very large (> 20
+GB).
 
 */
 
@@ -108,7 +119,7 @@ foreach num of numlist 1(1)32 {
     replace Nabort = ``num'' if estado==`num'
 }
 gen pop815 = population if year>2007&year<2016
-/*
+
 preserve
 collapse Nabort (sum) pop815, by(stateName)
 gen rate = Nabort/pop815*1000
@@ -129,12 +140,12 @@ legend(symy(*1.45) symx(*1.45) size(*1.98));
 graph export "$OUT/Spillovers.eps", as(eps) replace;
 #delimit cr
 restore
-*/
+
 bys estado: egen pop815c = sum(pop815)
 gen AbortRate = Nabort/pop815c*1000
 
 
-/*
+
 #delimit ;
 estpost sum population deliveries totalONonBirth abortionRelated haemorrhage
 days_abortionRelated days_haemorrhage birth maternalDeath abortiveDeaths;
@@ -606,7 +617,6 @@ gen MSPE = .
 local alphaO = alpha[1,1]
     
 local k = 1
-*foreach num of numlist 1 5 12 13 15 16 19 25 27 29 32 {
 foreach num of numlist 1 2 4(1)8 10(1)32 {
     dis "Round `num'"
     local preM  = 1
@@ -695,8 +705,6 @@ dis `pv'
 
 restore
 
-exit
-
 
 
 local j = 1
@@ -780,11 +788,11 @@ foreach var in `amorb' `hmorb' birth maternalDeath abortiveDeaths {
     }                       
     local ++j
 }
-exit
+
 
 
 ********************************************************************************
-*** (X) Spillovers
+*** (5) Spillovers
 ********************************************************************************
 xtset estado year
 replace birth=birth*1.1 if estado==15
@@ -1098,10 +1106,10 @@ dis `pv'
 
 restore
 }
-exit
+
 
 ********************************************************************************
-*** (5) Difference-in-differences
+*** (6) Difference-in-differences
 ********************************************************************************
 gen ReformClose = estado==15&year>=2007
 gen post7 = year>=2007
@@ -1150,7 +1158,7 @@ stats(N mean, fmt(%9.0gc %5.3f)
       label("\\ Observations" "Mean of Dependent Variable"));
 #delimit cr
 estimates clear
-exit
+
 
 *-------------------------------------------------------------------------------
 *--(A) Morbidity
@@ -1184,38 +1192,6 @@ foreach var in abortionRelated haemorrhage days_abortionRelated days_haemorrhage
     eststo: ereturn post b v
     estadd scalar mean = `mean'
     estadd scalar N    = `N'
-
-    /*
-    foreach yr of numlist 2004(1)2006 {
-        gen morbtemp = `var'Pop if year==`yr'
-        bys stateNum: egen mAve`yr'=mean(morbtemp)
-        drop morbtemp
-    }
-    ebalance treat mAve2004 mAve2005 mAve2006, gen(entropyWt) tolerance(1)
-    ebalance treat mAve2004 mAve2005 mAve2006, basewt(population) gen(eWtPop) tolerance(30)
-    regress `var'Pop `Treat' `FE' [aw=entropyWt], cluster(estado)
-    matrix v = e(V)
-    matrix b = e(b)
-    boottest ILE=0, boottype(wild) seed(22)
-    matrix v[1,1] = (_b[ILE]/r(t))^2
-    boottest regressive=0, boottype(wild) seed(22)
-    matrix v[2,2] = (_b[regressive]/r(t))^2
-    eststo: ereturn post b v
-    estadd scalar mean = `mean'
-    estadd scalar N    = `N'
-
-    regress `var'Pop `Treat' `FE' [aw=eWtPop]   , cluster(estado)
-    matrix v = e(V)
-    matrix b = e(b)
-    boottest ILE=0, boottype(wild) seed(22)
-    matrix v[1,1] = (_b[ILE]/r(t))^2
-    boottest regressive=0, boottype(wild) seed(22)
-    matrix v[2,2] = (_b[regressive]/r(t))^2
-    eststo: ereturn post b v
-    estadd scalar mean = `mean'
-    estadd scalar N    = `N'
-    drop mAve* entropyWt eWtPop
-    */
     
     regress `var'Pop `Treat' `FE' `X', cluster(estado)
     matrix v = e(V)
@@ -1310,38 +1286,6 @@ foreach var in abortionRelated haemorrhage days_abortionRelated days_haemorrhage
     eststo: ereturn post b v
     estadd scalar mean = `mean'
     estadd scalar N    = `N'
-    /*
-    foreach yr of numlist 2004(1)2006 {
-        gen morbtemp = `var'Bir if year==`yr'
-        bys stateNum: egen mAve`yr'=mean(morbtemp)
-        drop morbtemp
-    }
-    ebalance treat mAve2004 mAve2005 mAve2006, gen(entropyWt) tolerance(15)
-    ebalance treat mAve2004 mAve2005 mAve2006, basewt(population) gen(eWtPop) tolerance(30)
-    regress `var'Bir `Treat' `FE' [aw=entropyWt], cluster(estado)
-    matrix v = e(V)
-    matrix b = e(b)
-    boottest ILE=0, boottype(wild) seed(22)
-    matrix v[1,1] = (_b[ILE]/r(t))^2
-    boottest regressive=0, boottype(wild) seed(22)
-    matrix v[2,2] = (_b[regressive]/r(t))^2
-    eststo: ereturn post b v
-    estadd scalar mean = `mean'
-    estadd scalar N    = `N'
-
-    regress `var'Bir `Treat' `FE' [aw=eWtPop]   , cluster(estado)
-    matrix v = e(V)
-    matrix b = e(b)
-    boottest ILE=0, boottype(wild) seed(22)
-    matrix v[1,1] = (_b[ILE]/r(t))^2
-    boottest regressive=0, boottype(wild) seed(22)
-    matrix v[2,2] = (_b[regressive]/r(t))^2
-    eststo: ereturn post b v
-    estadd scalar mean = `mean'
-    estadd scalar N    = `N'
-
-    drop mAve* entropyWt eWtPop
-    */
 }
 lab var regressive "Post-Regressive Law Change"
 lab var ILE        "Post-ILE Reform (DF)"
@@ -1421,42 +1365,6 @@ foreach var in maternalDeath abortiveDeaths {
     estadd scalar mean = `mean'
     estadd scalar N    = `N'
 
-    /*
-    foreach yr of numlist 2001(1)2006 {
-        gen morbtemp = `var'Pop if year==`yr'
-        bys stateNum: egen mAve`yr'=mean(morbtemp)
-        drop morbtemp
-    }
-    #delimit ;
-    ebalance treat mAve2001 mAve2002 mAve2003 mAve2004 mAve2005 mAve2006,
-    gen(entropyWt) tolerance(5);
-    ebalance treat mAve2001 mAve2002 mAve2003 mAve2004 mAve2005 mAve2006,
-    basewt(population) gen(eWtPop) tolerance(11);
-    #delimit cr
-    regress `var'Pop `Treat' `FE' [aw=entropyWt], cluster(estado)
-    matrix v = e(V)
-    matrix b = e(b)
-    boottest ILE=0, boottype(wild) seed(22)
-    matrix v[1,1] = (_b[ILE]/r(t))^2
-    boottest regressive=0, boottype(wild) seed(22)
-    matrix v[2,2] = (_b[regressive]/r(t))^2
-    eststo: ereturn post b v
-    estadd scalar mean = `mean'
-    estadd scalar N    = `N'
-
-    regress `var'Pop `Treat' `FE'  [aw=eWtPop]   , cluster(estado)
-    matrix v = e(V)
-    matrix b = e(b)
-    boottest ILE=0, boottype(wild) seed(22)
-    matrix v[1,1] = (_b[ILE]/r(t))^2
-    boottest regressive=0, boottype(wild) seed(22)
-    matrix v[2,2] = (_b[regressive]/r(t))^2
-    eststo: ereturn post b v
-    estadd scalar mean = `mean'
-    estadd scalar N    = `N'
-    drop mAve* entropyWt eWtPop
-    */
-    
     drop if year>2013
     cap drop `var'Bir
     
@@ -1509,41 +1417,6 @@ foreach var in maternalDeath abortiveDeaths {
     estadd scalar mean = `mean'
     estadd scalar N    = `N'
     
-    /*
-    foreach yr of numlist 2001(1)2006 {
-        gen morbtemp = `var'Bir if year==`yr'
-        bys stateNum: egen mAve`yr'=mean(morbtemp)
-        drop morbtemp
-    }
-    #delimit ;
-    ebalance treat mAve2001 mAve2002 mAve2003 mAve2004 mAve2005 mAve2006,
-    gen(entropyWt) tolerance(100);
-    ebalance treat mAve2001 mAve2002 mAve2003 mAve2004 mAve2005 mAve2006,
-    basewt(population) gen(eWtPop) tolerance(100);
-    #delimit cr
-    regress `var'Bir `Treat' `FE'  [aw=entropyWt], cluster(estado)
-    matrix v = e(V)
-    matrix b = e(b)
-    boottest ILE=0, boottype(wild) seed(22)
-    matrix v[1,1] = (_b[ILE]/r(t))^2
-    boottest regressive=0, boottype(wild) seed(22)
-    matrix v[2,2] = (_b[regressive]/r(t))^2
-    eststo: ereturn post b v
-    estadd scalar mean = `mean'
-    estadd scalar N    = `N'
-    
-    regress `var'Bir `Treat' `FE' [aw=eWtPop]   , cluster(estado)
-    matrix v = e(V)
-    matrix b = e(b)
-    boottest ILE=0, boottype(wild) seed(22)
-    matrix v[1,1] = (_b[ILE]/r(t))^2
-    boottest regressive=0, boottype(wild) seed(22)
-    matrix v[2,2] = (_b[regressive]/r(t))^2
-    eststo: ereturn post b v
-    estadd scalar mean = `mean'
-    estadd scalar N    = `N'
-    drop mAve* entropyWt eWtPop
-    */
     restore
 }
 lab var regressive "Post Regressive Law Change"
@@ -1633,45 +1506,6 @@ estadd scalar pmean = `Pmean'
 estadd scalar rmean = `Rmean'
 estadd scalar N     = `N'
 
-/*
-foreach yr of numlist 2001(1)2006 {
-    gen ferttemp = fertPop if year==`yr'
-    bys stateNum: egen mAve`yr'=mean(ferttemp)
-    drop ferttemp
-}
-#delimit ;
-ebalance treat mAve2001 mAve2002 mAve2003 mAve2004 mAve2005 mAve2006,
-gen(entropyWt) tolerance(20);
-ebalance treat mAve2001 mAve2002 mAve2003 mAve2004 mAve2005 mAve2006,
-basewt(population) gen(eWtPop) tolerance(25);
-#delimit cr
-regress fertPop `Treat' `FE' [aw=entropyWt], cluster(estado)
-matrix v = e(V)
-matrix b = e(b)
-boottest ILE=0, boottype(wild) seed(22)
-matrix v[1,1] = (_b[ILE]/r(t))^2
-boottest regressive=0, boottype(wild) seed(22)
-matrix v[2,2] = (_b[regressive]/r(t))^2
-eststo: ereturn post b v
-estadd scalar mean  = `mean'
-sestadd scalar pmean = `Pmean'
-estadd scalar rmean = `Rmean'
-estadd scalar N     = `N'
-
-regress fertPop `Treat' `FE' [aw=eWtPop]   , cluster(estado)
-matrix v = e(V)
-matrix b = e(b)
-boottest ILE=0, boottype(wild) seed(22)
-matrix v[1,1] = (_b[ILE]/r(t))^2
-boottest regressive=0, boottype(wild) seed(22)
-matrix v[2,2] = (_b[regressive]/r(t))^2
-eststo: ereturn post b v
-estadd scalar mean  = `mean'
-estadd scalar pmean = `Pmean'
-estadd scalar rmean = `Rmean'
-estadd scalar N     = `N'
-drop mAve*
-*/
 lab var ILE        "Post-ILE Reform (DF)"
 
 #delimit ;
@@ -1687,262 +1521,6 @@ stats(N mean pmean rmean, fmt(%9.0gc %5.3f)
 estimates clear
 restore
 
-exit
-
-
-********************************************************************************
-*** (6) Entropy weight
-********************************************************************************
-local l1 lwidth(medthick) lcolor(black) 
-local l2 lwidth(medthick) lcolor(gs8) lpattern(dash)
-
-*-------------------------------------------------------------------------------
-*--(A) Morbidity
-*-------------------------------------------------------------------------------
-local i = 1
-foreach var in abortionRelated haemorrhage  {
-    preserve
-    keep if year>2003&year<2016
-    cap drop `var'Pop
-    gen `var'Pop = `var'/population*1000
-    foreach yr of numlist 2004(1)2006 {
-        gen morbtemp = `var'Pop if year==`yr'
-        bys stateNum: egen mAve`yr'=mean(morbtemp)
-        drop morbtemp
-    }
-    gen treat = estado == 9
-    ebalance treat mAve2004 mAve2005 mAve2006, gen(entropyWt)
-    collapse `var'Pop [pw=entropyWt], by(treat year)
-    
-    #delimit ;
-    twoway line `var'Pop year if treat==1, `l1'
-    ||     line `var'Pop year if treat==0, `l2'
-    legend(label(1 "DF") label(2 "Rest of Mexico"))
-    xline(2007.33, lcolor(red)) xtitle("Year")  ytitle("Discharges")
-    scheme(LF3); 
-    graph export "$OUT/morbidity/entropy_`var'_pop.eps", replace as(eps);
-    #delimit cr
-    reshape wide `var'Pop, i(year) j(treat)
-    gen `var'PopTreat = `var'Pop1-`var'Pop0
-    keep year `var'PopTreat
-    tempfile entropy
-    save `entropy'
-    #delimit cr
-    restore
-
-    local placebos
-    local pool1 2 5 7 10 11 13 16 17 18 20 21 22 24 25 26 27 30 31
-    local pool2 1 2 5 7  11 13 14 16 18 20 22 24 25 26 28 30 31 32
-    
-    foreach num of numlist `pool`i'' {
-        preserve
-        keep if year>2003&year<2016
-        foreach yr of numlist 2004(1)2006 {
-            gen morbtemp = `var'Pop if year==`yr'
-            bys stateNum: egen mAve`yr'=mean(morbtemp)
-            drop morbtemp
-        }
-        gen treat = estado == `num'
-        ebalance treat mAve2004 mAve2005 mAve2006, gen(entropyWt) tolerance(0.05)
-        dis `num'
-        collapse `var'Pop [pw=entropyWt], by(treat year)
-        
-        reshape wide `var'Pop, i(year) j(treat)
-        gen `var'PopPlacebo`num' = `var'Pop1-`var'Pop0
-        keep year `var'PopPlacebo`num'
-        merge 1:1 year using `entropy'
-        drop _merge
-        save `entropy', replace
-        restore
-
-        #delimit ;
-        local placebos `placebos' line `var'PopPlacebo`num' year,
-                        lcolor(gs12) lpattern(dash) ||;
-        #delimit cr
-    }
-
-    preserve
-    use `entropy', clear
-    #delimit ;
-    twoway `placebos' line `var'PopTreat year, lwidth(medthick) scheme(LF3)
-    legend(order(32 "Mexico D.F." 2 "Placebo Permutations")) xline(2007)
-    xtitle("");
-    graph export "$OUT/morbidity/entropy`var'_Inference.eps", replace;
-    #delimit cr
-    restore
-    local ++i
-}
-
-
-*-------------------------------------------------------------------------------
-*--(B) Mortality
-*-------------------------------------------------------------------------------
-local i = 1
-foreach var in maternalDeath abortionDeaths {
-    preserve
-    keep if year>=2001&year<2016
-    cap drop `var'Pop
-    gen `var'Pop = `var'/population*1000
-    foreach yr of numlist 2001(1)2006 {
-        gen morbtemp = `var'Pop if year==`yr'
-        bys stateNum: egen mAve`yr'=mean(morbtemp)
-        drop morbtemp
-    }
-    gen treat = estado == 9
-    sum mAve*
-    #delimit ;
-    ebalance treat mAve2001 mAve2002 mAve2003 mAve2004 mAve2005 mAve2006,
-    gen(entropyWt) tolerance(0.8);
-    #delimit cr
-    collapse `var'Pop [pw=entropyWt], by(treat year)
-    
-    #delimit ;
-    twoway line `var'Pop year if treat==1, `l1'
-    ||     line `var'Pop year if treat==0, `l2'
-    legend(label(1 "DF") label(2 "Rest of Mexico"))
-    xline(2007.33, lcolor(red)) xtitle("Year")  ytitle("Discharges")
-    scheme(LF3); 
-    graph export "$OUT/mortality/entropy_`var'_pop.eps", replace as(eps);
-    #delimit cr
-    reshape wide `var'Pop, i(year) j(treat)
-    gen `var'PopTreat = `var'Pop1-`var'Pop0
-    keep year `var'PopTreat
-    tempfile entropy
-    save `entropy'
-    #delimit cr
-    restore
-
-    local placebos
-    local pool1 4 5 6 7 8 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32
-    local pool2 1 2 5 7  11 13 14 16 18 20 22 24 25 26 28 30 31 32
-    
-    foreach num of numlist `pool`i'' {
-        preserve
-        keep if year>=2001&year<2016
-        cap drop `var'Pop
-        gen `var'Pop = `var'/population*1000
-        foreach yr of numlist 2001(1)2006 {
-            gen morbtemp = `var'Pop if year==`yr'
-            bys stateNum: egen mAve`yr'=mean(morbtemp)
-            drop morbtemp
-        }
-        gen treat = estado == `num'
-        #delimit ;
-        ebalance treat mAve2001 mAve2002 mAve2003 mAve2004 mAve2005 mAve2006,
-        gen(entropyWt) tolerance(0.8);
-        #delimit cr
-        dis `num'
-        collapse `var'Pop [pw=entropyWt], by(treat year)
-        
-        reshape wide `var'Pop, i(year) j(treat)
-        gen `var'PopPlacebo`num' = `var'Pop1-`var'Pop0
-        keep year `var'PopPlacebo`num'
-        merge 1:1 year using `entropy'
-        drop _merge
-        save `entropy', replace
-        restore
-
-        #delimit ;
-        local placebos `placebos' line `var'PopPlacebo`num' year,
-                        lcolor(gs12) lpattern(dash) ||;
-        #delimit cr
-    }
-    dis "`var'"
-    preserve
-    use `entropy', clear
-    #delimit ;
-    twoway `placebos' line `var'PopTreat year, lwidth(medthick) scheme(LF3)
-    legend(order(32 "Mexico D.F." 2 "Placebo Permutations")) xline(2007)
-    xtitle("");
-    graph export "$OUT/mortality/entropy`var'_Inference.eps", replace;
-    #delimit cr
-    restore
-    local ++i
-}
-
-
-*-------------------------------------------------------------------------------
-*--(C) Fertility
-*-------------------------------------------------------------------------------
-foreach var of varlist birth {
-    preserve
-    keep if year>2000&year<2014
-    cap drop `var'Pop
-    gen `var'Pop = `var'/population*1000
-    foreach yr of numlist 2001(1)2006 {
-        gen morbtemp = `var'Pop if year==`yr'
-        bys stateNum: egen mAve`yr'=mean(morbtemp)
-        drop morbtemp
-    }
-    gen treat = estado == 9
-    #delimit ;
-    ebalance treat mAve2001 mAve2002 mAve2003 mAve2004 mAve2005 mAve2006,
-    gen(entropyWt) tolerance(19);
-    #delimit cr
-    collapse `var'Pop [pw=entropyWt], by(treat year)
-    
-    #delimit ;
-    twoway line `var'Pop year if treat==1, `l1'
-    ||     line `var'Pop year if treat==0, `l2'
-    legend(label(1 "DF") label(2 "Rest of Mexico"))
-    xline(2007.33, lcolor(red)) xtitle("Year")  ytitle("Discharges")
-    scheme(LF3); 
-    graph export "$OUT/fertility/entropy_`var'_pop.eps", replace as(eps);
-    #delimit cr
-    reshape wide `var'Pop, i(year) j(treat)
-    gen `var'PopTreat = `var'Pop1-`var'Pop0
-    keep year `var'PopTreat
-    tempfile entropy
-    save `entropy'
-    #delimit cr
-    restore
-
-    local placebos
-    foreach num of numlist 1 2 4(1)6 8 10(1)14 16(1)22 24(1)26 28(1)30 32 {
-
-        preserve
-        keep if year>2000&year<2014
-        cap drop `var'Pop
-        gen `var'Pop = `var'/population*1000
-        foreach yr of numlist 2001(1)2006 {
-            gen morbtemp = `var'Pop if year==`yr'
-            bys stateNum: egen mAve`yr'=mean(morbtemp)
-            drop morbtemp
-        }
-        gen treat = estado == `num'
-        #delimit ;
-        ebalance treat mAve2001 mAve2002 mAve2003 mAve2004 mAve2005 mAve2006,
-        gen(entropyWt) tolerance(15);
-        #delimit cr
-        dis `num'
-        collapse `var'Pop [pw=entropyWt], by(treat year)
-        
-        reshape wide `var'Pop, i(year) j(treat)
-        gen `var'PopPlacebo`num' = `var'Pop1-`var'Pop0
-        keep year `var'PopPlacebo`num'
-        merge 1:1 year using `entropy'
-        drop _merge
-        save `entropy', replace
-        restore
-
-        #delimit ;
-        local placebos `placebos' line `var'PopPlacebo`num' year,
-                        lcolor(gs12) lpattern(dash) ||;
-        #delimit cr
-    }
-
-    preserve
-    use `entropy', clear
-    #delimit ;
-    twoway `placebos' line `var'PopTreat year, lwidth(medthick) scheme(LF3)
-    legend(order(32 "Mexico D.F." 2 "Placebo Permutations")) xline(2007)
-    xtitle("");
-    graph export "$OUT/fertility/entropy`var'_Inference.eps", replace;
-    #delimit cr
-    restore
-    local ++i
-}
-*/
 ********************************************************************************
 *** (7) Event study
 ********************************************************************************
@@ -2056,14 +1634,6 @@ graph export "$OUT/morbidity/event_haemorrhage_regressive.eps", replace;
 drop EST_* LB_* UB_* NUM_*
 
 
-*cap gen treat = estado == 9
-*foreach yr of numlist 2004(1)2006 {
-*    gen morbtemp = abortionRelatedPop if year==`yr'
-*    bys stateNum: egen mAve`yr'=mean(morbtemp)
-*    drop morbtemp
-*}
-*ebalance treat mAve2004 mAve2005 mAve2006, gen(entropyWt) 
-*ebalance treat mAve2004 mAve2005 mAve2006, basewt(population) gen(eWtPop)
 regress abortionRelatedPop ReformClose i.estado i.year `morbLLr' `morbLLp' `X' `wt', cluster(estado)
 
 gen EST_r = .
@@ -2243,69 +1813,6 @@ graph export "$OUT/mortality/event_abortive_regressive.eps", replace;
 drop EST_* LB_* UB_* NUM_*
 
 
-****
-regress familyViolencePop ReformClose i.estado i.year `mortLLr' `mortLLp' `X' `wt', cluster(estado)
-gen EST_r = .
-gen LB_r  = .
-gen UB_r  = .
-gen NUM_r = .
-gen EST_p = .
-gen LB_p  = .
-gen UB_p  = .
-gen NUM_p = .
-local j=1
-foreach var of varlist `mortLLr' {
-    boottest `var'=0, boottype(wild) seed(22)
-    local se = _b[`var']/r(t)
-    replace EST_r = _b[`var'] in `j'
-    replace LB_r  = _b[`var']-invttail(e(df_r),0.025)*`se' in `j'
-    replace UB_r  = _b[`var']+invttail(e(df_r),0.025)*`se' in `j'
-    replace NUM_r = `j'-9 in `j'
-    if `j'==7 {
-        local ++j
-        replace NUM_r = `j'-9 in `j'
-        replace LB_r = 0  in `j'
-        replace UB_r = 0 in `j'
-    }
-    local ++j
-}
-local j=1
-foreach var of varlist `mortLLp' {
-    boottest `var'=0, boottype(wild) seed(22)
-    local se = _b[`var']/r(t)
-    replace EST_p = _b[`var'] in `j'
-    replace LB_p  = _b[`var']-invttail(e(df_r),0.025)*`se' in `j'
-    replace UB_p  = _b[`var']+invttail(e(df_r),0.025)*`se' in `j'
-    replace NUM_p = `j'-7 in `j'
-    if `j'==5 {
-        local ++j
-        replace NUM_p = `j'-7 in `j'
-        replace LB_p = 0 in `j'
-        replace UB_p = 0 in `j'
-    }
-    local ++j
-}
-#delimit ;
-twoway rarea LB_p UB_p NUM_p, color(gs14)
-    || scatter EST_p NUM_p, ms(oh) xline(-1, lpattern(dash) lcolor(gs9)) 
-scheme(s1mono) yline(0, lcolor(maroon)) 
-xlabel(-6(1)8) ytitle("Women's Deaths due to Family Violence")
-xtitle("Time to Reform") note("Deaths are per 1,000 Women aged 15-49")
-legend(order(2 "Point Estimate" 1 "95% CI"));
-graph export "$OUT/mortality/event_familyViolence_progressive.eps", replace;
-
-twoway rarea LB_r UB_r NUM_r, color(gs14)
-    || scatter EST_r NUM_r, ms(oh) xline(-1, lpattern(dash) lcolor(gs9)) 
-scheme(s1mono) yline(0, lcolor(maroon))
-ytitle("Women's Deaths due to Family Violence") xlabel(-8(1)7)
-xtitle("Time to Reform") note("Deaths are per 1,000 Women age 15-49")
-legend(order(2 "Point Estimate" 1 "95% CI"));
-graph export "$OUT/mortality/event_familyViolence_regressive.eps", replace;
-#delimit cr
-drop EST_* LB_* UB_* NUM_*
-exit
-*****
-    
 
 cap drop fertPop
 gen fertPop = birth/population*1000
@@ -2380,56 +1887,6 @@ drop EST_* LB_* UB_* NUM_*
 
 
 
-exit
-
-
-
-
-foreach num of numlist 4 3 2 0 {
-    replace EST = _b[progressiveN`num'] in `j'
-    replace LB  = _b[progressiveN`num']-1.96*_se[progressiveN`num'] in `j'
-    replace UB  = _b[progressiveN`num']+1.96*_se[progressiveN`num'] in `j'
-    replace NUM = -`num' in `j'
-    local ++j
-}
-replace EST = 0 in `j'
-replace LB  = 0 in `j'
-replace UB  = 0 in `j'
-replace NUM = 1 in `j'
-local ++j
-
-foreach num of numlist 1(1)8 {
-    replace EST = _b[progressiveP`num'] in `j'
-    replace LB  = _b[progressiveP`num']-1.96*_se[progressiveP`num'] in `j'
-    replace UB  = _b[progressiveP`num']+1.96*_se[progressiveP`num'] in `j'
-    replace NUM = `num' in `j'
-    local ++j
-}
-sort NUM
-#delimit ;
-twoway line EST NUM in 1/`j', lcolor(black) lwidth(medthick) scheme(s1mono)
-|| rcap LB UB NUM in 1/`j', lcolor(gs3) xtitle("Time") ytitle("Estimate")
-yline(0, lcolor(black) lpattern(dash)) xlabel(-5 -4 -3 -2 -1 0 1 2 3 4)
-legend(order(1 "Point Estimate" 2 "95% CI"));
-graph export "$OUT/haemorrhageEvent.eps", replace as(eps);
-#delimit cr
-
-
-
-exit
-
-local lvls year estado ILE regressive
-*preserve
-collapse (sum) abortionRelated deliveries haemorrhage O0* population, by(`lvls')
-gen haemRate = haemorrhage/population
-reg haemRate i.year i.estado regressive ILE [aw=population], cluster(ILE)
-
-permute ILE _b[]: reg haemRate i.year i.estado regressive ILE, cluster(ILE)
-exit
-
-*restore
-
-*/
 
 ********************************************************************************
 *** (8) Longer plots (SAEH only)
@@ -2464,7 +1921,7 @@ replace state=2 if regressiveState==1
 replace state=0 if state==.
 
 
-/*
+
 preserve
 collapse (sum) `gvars', by(year state)
 
@@ -2485,7 +1942,7 @@ foreach var of varlist `gvars' {
 
 }
 restore
-*/
+
 collapse (sum) `gvars', by(year estado)
 merge 1:1 year estado using `pop'
 xtset estado year
@@ -2531,7 +1988,6 @@ foreach var of varlist abortionRelated haemorrhage {
     #delimit cr
     drop yearS Dif*
 }    
-exit
 
 preserve
 collapse (sum) `gvars', by(date state)
@@ -2554,6 +2010,4 @@ foreach var of varlist `gvars' {
 }
 restore
 
-
-exit
 
